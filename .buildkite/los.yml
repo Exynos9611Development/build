@@ -1,0 +1,2 @@
+steps:
+  - command: "chmod +x buildkite/los.sh && ./buildkite/los.sh"
