@@ -71,7 +71,7 @@ setup_zram() {
 }
 
 repo_init() {
-  if [ ! -d /lineage/ ]; then
+  if [ ! -d /lineage/ ] && [ ! -d /lineage/.repo/ ]; then
     mkdir /lineage
     cd /lineage
     repo init -u https://github.com/lineageos/android.git -b lineage-"${lineage_ver[0]}" --git-lfs --depth=1  | tee /tmp/android-sync.log
@@ -119,7 +119,7 @@ build_device() {
 }
 
 upload_rom() {
-  local tag_name="$build_date" 
+  tag_name="$build_date" 
   git clone https://github.com/Exynos9611Development/OTA OTA
   for device in "${devices[@]}"; do
     cp out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
@@ -140,9 +140,10 @@ post_telegram() {
 "Build $BUILDKITE_MESSAGE is finished!
 ROM: LineageOS ${lineage_ver[0]}
 
+Devices: $devices
 Date: $tag_name
 Type: UNOFFICIAL
-OS patch Level: $os_patch_lvl 
+OS patch Level: $os_patch_lvl
 
 Download: [Link](https://github.com/Exynos9611Development/OTA/releases/tag/$tag_name)
 
@@ -152,7 +153,7 @@ Known quirks:
 
 cleanup() {
   cd ~/
-  rm -rf /lineage ~/.cache ~/.ccache /tmp
+  rm -rf ~/.cache ~/.ccache /tmp
   DEBIAN_FRONTEND=noninteractive apt autoremove -y
 }
 
