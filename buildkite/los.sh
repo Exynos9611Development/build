@@ -89,14 +89,16 @@ sync_repo() {
 }
 
 setup_signing_and_ota() {
-  echo "Setting up signing and OTA"
-  git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log
-  sed -i 's/ChangeToYourOwnURL/https:\/\/github.com\/Exynos9611Development\/OTA\/releases\/download\/%s\/%s/g' vendor/lineage/OTA/generate_ota_json.sh
-  sed -i '/@echo "Package Complete: $(LINEAGE_TARGET_PACKAGE)"/i \	$(hide) ./vendor/lineage/OTA/generate_ota_json.sh $(LINEAGE_TARGET_PACKAGE)' vendor/lineage/build/tasks/bacon.mk
-  git clone git@github.com:Exynos9611Development/android_vendor_lineage-priv.git vendor/lineage-priv -b lineage-"${lineage_ver[0]}" | tee /tmp/android-sync.log
-  for device in "${devices[@]}"; do
-    echo "lineage.updater.uri=https://raw.githubusercontent.com/Exynos9611Development/OTA/lineage/"$device"/ota.json" >> device/samsung/$device/vendor.prop
-  done
+  if [ ! -d /lineage/vendor/lineage_priv ] && [ ! -d /lineage/vendor/lineage/OTA]; then
+    echo "Setting up signing and OTA"
+    git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log
+    sed -i 's/ChangeToYourOwnURL/https:\/\/github.com\/Exynos9611Development\/OTA\/releases\/download\/%s\/%s/g' vendor/lineage/OTA/generate_ota_json.sh
+    sed -i '/@echo "Package Complete: $(LINEAGE_TARGET_PACKAGE)"/i \	$(hide) ./vendor/lineage/OTA/generate_ota_json.sh $(LINEAGE_TARGET_PACKAGE)' vendor/lineage/build/tasks/bacon.mk
+    git clone git@github.com:Exynos9611Development/android_vendor_lineage-priv.git vendor/lineage-priv -b lineage-"${lineage_ver[0]}" | tee /tmp/android-sync.log
+    for device in "${devices[@]}"; do
+      echo "lineage.updater.uri=https://raw.githubusercontent.com/Exynos9611Development/OTA/lineage/"$device"/ota.json" >> device/samsung/$device/vendor.prop
+    done
+  fi
 }
 
 setup_ccache() {
