@@ -8,10 +8,10 @@ build_date=$(date -u +%Y%m%d)
 source /buildkite/hooks/env
 
 function telegram() {
-  result=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
+  curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
     -d "chat_id=@$TELEGRAM_GROUP_ID" \
     -d "parse_mode=markdown" \
-    -d "text=$2")
+    -d "text=$2"
 }
 
 install_deps() {
@@ -25,7 +25,13 @@ install_deps() {
 
 notify_telegram() {
   echo "Sending message to Telegram"
-  telegram sendmessage "Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)"
+  telegram sendmessage \
+"Building $BUILDKITE_MESSAGE:
+Buildserver: $BUILDKITE_AGENT_NAME
+Branch: $BUILDKITE_BRANCH
+Commit: $BUILDKITE_COMMIT
+
+[See progress]($BUILDKITE_BUILD_URL)"
 }
 
 setup_git() {
@@ -128,14 +134,26 @@ upload_rom() {
   git push
 }
 
+post_telegram() {
+  os_patch_lvl=$(cat /lineage/out/target/product/a51/system/build.prop | grep ro.build.version.security_patch | cut -d'=' -f2)
+  telegram sendmessage \
+"Build $BUILDKITE_MESSAGE is finished!
+ROM: LineageOS ${lineage_ver[0]}
+
+Date: $tag_name
+Type: UNOFFICIAL
+OS patch Level: $os_patch_lvl 
+
+Download: [Link](https://github.com/Exynos9611Development/OTA/releases/tag/$tag_name)
+
+Known quirks:
+ - IMS"
+}
+
 cleanup() {
   cd ~/
   rm -rf /lineage ~/.cache ~/.ccache /tmp
   DEBIAN_FRONTEND=noninteractive apt autoremove -y
-}
-
-post_telegram() {
-  telegram sendmessage "Build ${build_display_name} is finished!\n\nDate: $tag_name\nType: UNOFFICIAL\n\nDownload: [Link](https://github.com/Exynos9611Development/OTA/releases/tag/$tag_name)\n\nKnown quirks:\n- IMS" "Markdown"
 }
 
 main() {
@@ -150,8 +168,9 @@ main() {
   for device in "${devices[@]}"; do
     build_device "$device"
   done
-  upload_rom
   post_telegram
+  upload_rom
+
   cleanup
 }
 
