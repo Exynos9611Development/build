@@ -124,14 +124,14 @@ upload_rom() {
   for device in "${devices[@]}"; do
     cp out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
     cp out/target/product/"$device"/recovery.img OTA/recovery-"$device".img
-    cp out/target/product/"$device"/ota.json OTA/"$device"/ota.json
+  #  cp out/target/product/"$device"/ota.json OTA/"$device"/ota.json
   done
   cd OTA
-  git add */*.json
-  git commit -m "ota: JSON update "$tag_name" LineageOS "${lineage_ver[0]}""
+  # git add */*.json
+  # git commit -m "ota: JSON update "$tag_name" LineageOS "${lineage_ver[0]}""
   DEBIAN_FRONTEND=noninteractive gh release create "$tag_name" --title "$tag_name"
   gh release upload "$tag_name" *.zip *.img
-  git push
+  #git push
 }
 
 post_telegram() {
