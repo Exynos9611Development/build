@@ -49,7 +49,7 @@ check_storage() {
   local total_storage available_storage
   total_storage=$(df -h | awk '/\/$/ {print $4}')
   available_storage=${total_storage%G}
-  if [ "$available_storage" -lt 250 ]; then
+  if [ "$available_storage" -lt 250 ] && [ ! -d /lineage/ ]; then
     echo "You need at least 250 GB of free storage to build ROM!"
     exit 1
   fi
