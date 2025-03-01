@@ -7,6 +7,8 @@ build_date=$(date -u +%Y%m%d)
 
 rm -rf /tmp/android-*.log || true
 
+source /buildkite/hooks/env
+
 function telegram() {
   result=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
     -d "chat_id=@$TELEGRAM_GROUP_ID" \
@@ -131,7 +133,7 @@ upload_rom() {
 
 cleanup() {
   cd ~/
-  rm -rf /lineage ~/.cache ~/.ccache
+  rm -rf /lineage ~/.cache ~/.ccache /tmp
   DEBIAN_FRONTEND=noninteractive apt autoremove -y
 }
 

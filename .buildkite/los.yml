@@ -1,13 +1,2 @@
-name: "LineageOS 22.1"
-description: "Samsung Galaxy A51, F41, M31s, M31, M21"
-env:
-  - BUILDKITE_MESSAGE
-  - BUILDKITE_BUILD_URL
-  - GITHUB_TOKEN
-  - GITHUB_EMAIL
-  - GITHUB_USERNAME
-  - TELEGRAM_BOT_TOKEN
-  - TELEGRAM_GROUP_ID
-
 steps:
   - command: "chmod +x buildkite/los.sh && ./buildkite/los.sh"
