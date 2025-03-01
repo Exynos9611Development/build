@@ -25,7 +25,7 @@ install_deps() {
 
 notify_telegram() {
   echo "Sending message to Telegram"
-  telegram sendmessage "Building "$BUILDKITE_MESSAGE": [See progress]($BUILDKITE_BUILD_URL)"
+  telegram sendmessage "Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)"
 }
 
 setup_git() {
