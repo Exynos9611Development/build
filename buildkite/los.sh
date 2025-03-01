@@ -32,7 +32,6 @@ notify_telegram() {
 
 setup_git() {
   echo "Setting up git"
-  gh auth login --with-token "$GITHUB_TOKEN"
   git config --global user.email "$GITHUB_EMAIL"
   git config --global user.name "$GITHUB_USERNAME"
 }
