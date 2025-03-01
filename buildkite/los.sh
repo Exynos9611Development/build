@@ -1,11 +1,9 @@
 #!/bin/bash
 set -eo pipefail
 
-devices=("a51" "f41" "m31s" "m31" "m21")
+devices=("a51")
 lineage_ver=("22.1")
 build_date=$(date -u +%Y%m%d)
-
-rm -rf /tmp/android-*.log || true
 
 source /buildkite/hooks/env
 
@@ -27,7 +25,7 @@ install_deps() {
 
 notify_telegram() {
   echo "Sending message to Telegram"
-  telegram sendmessage "Build $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)"
+  telegram sendmessage "Building "$BUILDKITE_MESSAGE": [See progress]($BUILDKITE_BUILD_URL)"
 }
 
 setup_git() {
