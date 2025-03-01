@@ -8,10 +8,10 @@ build_date=$(date -u +%Y%m%d)
 source /buildkite/hooks/env
 
 function telegram() {
-  curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
+  RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
     -d "chat_id=@$TELEGRAM_GROUP_ID" \
     -d "parse_mode=markdown" \
-    -d "text=$2"
+    -d "text=$2")
 }
 
 install_deps() {
@@ -121,8 +121,10 @@ build_device() {
 }
 
 upload_rom() {
-  tag_name="$build_date" 
+  tag_name="$build_date"
+  if [ ! -d /lineage/OTA ]; then
   git clone https://github.com/Exynos9611Development/OTA OTA
+  fi
   for device in "${devices[@]}"; do
     cp out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
     cp out/target/product/"$device"/recovery.img OTA/recovery-"$device".img
@@ -171,9 +173,8 @@ main() {
   for device in "${devices[@]}"; do
     build_device "$device"
   done
-  post_telegram
   upload_rom
-
+  post_telegram
   cleanup
 }
 
