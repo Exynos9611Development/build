@@ -157,7 +157,7 @@ Known quirks:
 
 cleanup() {
   cd ~/
-  rm -rf ~/.cache ~/.ccache /tmp
+  rm -rf ~/.cache ~/.ccache /tmp/*
   DEBIAN_FRONTEND=noninteractive apt autoremove -y
 }
 
