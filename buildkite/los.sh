@@ -121,7 +121,7 @@ build_device() {
 }
 
 upload_rom() {
-  tag_name="$build_date"
+  local tag_name="$build_date"
   if [ ! -d /lineage/OTA ]; then
   git clone https://github.com/Exynos9611Development/OTA OTA
   fi
