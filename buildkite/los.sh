@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-devices=("a51 f41 m31s m31 m21")
+devices=("a51" "f41" "m31s" "m31" "m21")
 lineage_ver=("22.1")
 build_date=$(date -u +%Y%m%d)
 
