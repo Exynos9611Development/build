@@ -137,7 +137,7 @@ upload_rom() {
   cd OTA
   # git add */*.json
   # git commit -m "ota: JSON update "$tag_name" LineageOS "${lineage_ver[0]}""
-  DEBIAN_FRONTEND=noninteractive gh release create "$tag_name" --title "$tag_name"
+  DEBIAN_FRONTEND=noninteractive gh release create "$tag_name" --title "$tag_name" --generate-notes
   gh release upload "$tag_name" *.zip *.img
   #git push
   cd ../
