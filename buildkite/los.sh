@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-devices=("a51")
+devices=("a51 f41 m31s m31 m21")
 lineage_ver=("22.1")
 build_date=$(date -u +%Y%m%d)
 
@@ -68,7 +68,7 @@ setup_zram() {
 repo_init() {
   if [ ! -d /lineage/ ] && [ ! -d /lineage/.repo/ ]; then
     mkdir /lineage
-    cd /lineage
+    cd /lineage/
     repo init -u https://github.com/lineageos/android.git -b lineage-"${lineage_ver[0]}" --git-lfs --depth=1  | tee /tmp/android-sync.log
     git clone https://github.com/Exynos9611Development/local_manifests .repo/local_manifests -b lineage-"${lineage_ver[0]}" --depth=1 | tee /tmp/android-sync.log
   else
@@ -77,8 +77,8 @@ repo_init() {
 }
 
 notify_telegram() {
-  echo "Notifying telegram about start job"
-  telegram sendmessage "$telegram_message Initializing"
+  echo "Notifying telegram about job"
+  telegram sendmessage "$telegram_message Started"
 }
 
 sync_repo() {
@@ -119,7 +119,7 @@ setup_ccache() {
 build_device() {
   local device=$1
   source build/envsetup.sh
-  telegram editMessageText "$TELEGRAM_MESSAGE Building $device"
+  telegram editMessageText "$telegram_message Building $device"
   echo "Building ROM for $device" | tee /tmp/android-build.log
   brunch $device user 2>&1 | tee /tmp/android-build.log
 }
@@ -133,14 +133,15 @@ upload_rom() {
   for device in "${devices[@]}"; do
     cp out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
     cp out/target/product/"$device"/recovery.img OTA/recovery-"$device".img
-  #  cp out/target/product/"$device"/ota.json OTA/"$device"/ota.json
+    cp out/target/product/"$device"/ota.json OTA/"$device"/ota.json
   done
   cd OTA
-  # git add */*.json
-  # git commit -m "ota: JSON update "$tag_name" LineageOS "${lineage_ver[0]}""
+  git clean -xfd
+  git add */*.json
+  git commit -m "ota: JSON update "$tag_name" LineageOS "${lineage_ver[0]}""
   gh release create "$tag_name" --title "$tag_name" --generate-notes
   gh release upload "$tag_name" *.zip *.img
-  #git push
+  git push
   cd ../
 }
 
@@ -152,15 +153,12 @@ Devices: $devices
 Type: UNOFFICIAL
 OS patch Level: $os_patch_lvl
 
-Download: [Link](https://github.com/Exynos9611Development/OTA/releases/tag/$tag_name)
-
-Known quirks:
- - IMS"
-  telegram editMessageText "$telegram_message Build finished! $telegram_message_edit"
+Download: [Link](https://github.com/Exynos9611Development/OTA/releases/tag/$tag_name)"
+  telegram editMessageText "$telegram_message finished! $telegram_message_edit"
 }
 
 cleanup() {
-  rm -rf /root/.cache /root/.ccache /tmp/* .result.message_id .msgid
+  rm -rf out/ /tmp/* .result.message_id .msgid
   DEBIAN_FRONTEND=noninteractive apt autoremove -y
 }
 
