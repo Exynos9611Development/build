@@ -11,10 +11,10 @@ telegram() {
 	RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
 		-d "chat_id=@$TELEGRAM_GROUP_ID" \
 		-d "parse_mode=Markdown" \
-		-d "message_id=$(cat .msgid 2>/dev/null)" \
+		-d "message_id=$(cat ~/.msgid 2>/dev/null)" \
 		-d "text=$2")
-	MESSAGE_ID=$(jq '.result.message_id' <<<"$RESULT")
-	[[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" >.msgid
+	MESSAGE_ID=$(jq '~/.result.message_id' <<<"$RESULT")
+	[[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" > ~/.msgid
 }
 
 install_deps() {
@@ -159,7 +159,7 @@ Known quirks:
 
 cleanup() {
   cd ~/
-  rm -rf ~/.cache ~/.ccache /tmp/*
+  rm -rf ~/.cache ~/.ccache /tmp/* ~/.result.message_id ~/.msgid
   DEBIAN_FRONTEND=noninteractive apt autoremove -y
 }
 
