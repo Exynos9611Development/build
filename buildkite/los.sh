@@ -9,10 +9,10 @@ source /buildkite/hooks/env
 
 telegram() {
   RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
-	-d "chat_id=@$TELEGRAM_GROUP_ID" \
-	-d "parse_mode=Markdown" \
-	-d "message_id=$(cat .msgid 2>/dev/null)" \
-	-d "text=$2")
+	  -d "chat_id=@$TELEGRAM_GROUP_ID" \
+	  -d "parse_mode=Markdown" \
+	  -d "message_id=$(cat .msgid 2>/dev/null)" \
+	  -d "text=$2")
   MESSAGE_ID=$(jq '.result.message_id' <<<"$RESULT")
   [[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" > .msgid
 
@@ -21,8 +21,8 @@ Build status:"
 }
 
 install_deps() {
-  DEBIAN_FRONTEND=noninteractive apt update
-  DEBIAN_FRONTEND=noninteractive apt install -y bc netcat bison build-essential ccache curl flex g++-multilib gcc-multilib git gh git-lfs gnupg gperf imagemagick libncurses5-dev lib32ncurses5-dev lib32readline-dev lib32z1-dev libbz2-dev liblz4-tool libncurses5 libncurses5-dev libreadline-dev libsdl1.2-dev libsqlite3-dev libssl-dev libxml2 libxml2-utils llvm lzop openjdk-8-jdk pngcrush rsync s3cmd schedtool squashfs-tools wget zip zlib1g-dev python3 python3-pip libc6-dev-i386 x11proto-core-dev libx11-dev gnupg flex bison build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev xsltproc unzip fontconfig
+  DEBIAN_FRONTEND=noninteractive apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y bc netcat bison build-essential ccache curl flex g++-multilib gcc-multilib git gh git-lfs gnupg gperf imagemagick libncurses5-dev lib32ncurses5-dev lib32readline-dev lib32z1-dev libbz2-dev liblz4-tool libncurses5 libncurses5-dev libreadline-dev libsdl1.2-dev libsqlite3-dev libssl-dev libxml2 libxml2-utils llvm lzop openjdk-8-jdk pngcrush rsync s3cmd schedtool squashfs-tools wget zip zlib1g-dev python3 python3-pip libc6-dev-i386 x11proto-core-dev libx11-dev gnupg flex bison build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev xsltproc unzip fontconfig
 
   # repo
   curl -sLo /usr/local/bin/repo https://commondatastorage.googleapis.com/git-repo-downloads/repo 
@@ -78,12 +78,12 @@ repo_init() {
 
 notify_telegram() {
   echo "Notifying telegram about job"
-  telegram sendmessage "$telegram_message Started"
+  telegram sendmessage "${telegram_message} Started"
 }
 
 sync_repo() {
   echo "Syncing"
-  telegram editMessageText "$telegram_message Syncing"
+  telegram editMessageText "${telegram_message} Syncing"
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log
@@ -92,7 +92,7 @@ sync_repo() {
 
 setup_signing_and_ota() {
   if [ ! -d /lineage/vendor/lineage_priv ] && [ ! -d /lineage/vendor/lineage/OTA ]; then
-    telegram editMessageText "$telegram_message Setuping signing"
+    telegram editMessageText "${telegram_message} Setuping signing"
     echo "Setting up signing and OTA"
     git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log
     sed -i 's/ChangeToYourOwnURL/https:\/\/github.com\/Exynos9611Development\/OTA\/releases\/download\/%s\/%s/g' vendor/lineage/OTA/generate_ota_json.sh
@@ -121,7 +121,9 @@ build_device() {
   source build/envsetup.sh
   telegram editMessageText "$telegram_message Building $device"
   echo "Building ROM for $device" | tee /tmp/android-build.log
-  brunch "$device" user 2>&1 | tee /tmp/android-build.log
+  set +u
+  brunch "$device" user -j 2>&1 | tee /tmp/android-build.log
+  set -u
 }
 
 upload_rom() {
@@ -146,7 +148,7 @@ upload_rom() {
 }
 
 post_telegram() {
-  os_patch_lvl=$(grep ro.build.version.security_patch /lineage/out/target/product/a51/system/build.prop | cut -d'=' -f2)
+  os_patch_lvl=$(grep -r RELEASE_PLATFORM_SECURITY_PATCH build/release/build_config/ap*a.scl | tr -d ", \"a-zA-Z()")
   telegram_message_edit="
 Devices: ${devices[*]}
 
@@ -180,3 +182,4 @@ main() {
 }
 
 main
+
