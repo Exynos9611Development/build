@@ -7,11 +7,14 @@ build_date=$(date -u +%Y%m%d)
 
 source /buildkite/hooks/env
 
-function telegram() {
-  RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
-    -d "chat_id=@$TELEGRAM_GROUP_ID" \
-    -d "parse_mode=markdown" \
-    -d "text=$2")
+telegram() {
+	RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
+		-d "chat_id=@TELEGRAM_GROUP_ID" \
+		-d "parse_mode=Markdown" \
+		-d "message_id=$(cat .msgid 2>/dev/null)" \
+		-d "text=$2")
+	MESSAGE_ID=$(jq '.result.message_id' <<<"$RESULT")
+	[[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" >.msgid
 }
 
 install_deps() {
@@ -24,14 +27,10 @@ install_deps() {
 }
 
 notify_telegram() {
-  echo "Sending message to Telegram"
-  telegram sendmessage \
-"Building $BUILDKITE_MESSAGE:
-Buildserver: $BUILDKITE_AGENT_NAME
-Branch: $BUILDKITE_BRANCH
-Commit: $BUILDKITE_COMMIT
-
-[See progress]($BUILDKITE_BUILD_URL)"
+  TELEGRAM_MESSAGE="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
+Build status: "
+  echo "Notifying telegram about start build"
+  telegram sendmessage "$TELEGRAM_MESSAGE Initializing"
 }
 
 setup_git() {
@@ -82,6 +81,7 @@ repo_init() {
 }
 
 sync_repo() {
+  telegram editMessageText "$TELEGRAM_MESSAGE Syncing"
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log
@@ -90,6 +90,7 @@ sync_repo() {
 
 setup_signing_and_ota() {
   if [ ! -d /lineage/vendor/lineage_priv ] && [ ! -d /lineage/vendor/lineage/OTA]; then
+    telegram editMessageText "$TELEGRAM_MESSAGE Setuping signing"
     echo "Setting up signing and OTA"
     git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log
     sed -i 's/ChangeToYourOwnURL/https:\/\/github.com\/Exynos9611Development\/OTA\/releases\/download\/%s\/%s/g' vendor/lineage/OTA/generate_ota_json.sh
@@ -116,11 +117,13 @@ setup_ccache() {
 build_device() {
   local device=$1
   source build/envsetup.sh
+  telegram editMessageText "$TELEGRAM_MESSAGE Building $device"
   echo "Building ROM for $device" | tee /tmp/android-build.log
   brunch $device user 2>&1 | tee /tmp/android-build.log
 }
 
 upload_rom() {
+  telegram editMessageText "$TELEGRAM_MESSAGE Uploading"
   local tag_name="$build_date"
   if [ ! -d /lineage/OTA ]; then
   git clone https://github.com/Exynos9611Development/OTA OTA
@@ -140,10 +143,7 @@ upload_rom() {
 
 post_telegram() {
   os_patch_lvl=$(cat /lineage/out/target/product/a51/system/build.prop | grep ro.build.version.security_patch | cut -d'=' -f2)
-  telegram sendmessage \
-"Build $BUILDKITE_MESSAGE is finished!
-ROM: LineageOS ${lineage_ver[0]}
-
+  TELEGRAM_MESSAGE_EDIT="
 Devices: $devices
 Date: $tag_name
 Type: UNOFFICIAL
@@ -153,6 +153,7 @@ Download: [Link](https://github.com/Exynos9611Development/OTA/releases/tag/$tag_
 
 Known quirks:
  - IMS"
+  telegram editMessageText "$TELEGRAM_MESSAGE Build finished! $TELEGRAM_MESSAGE_EDIT"
 }
 
 cleanup() {
