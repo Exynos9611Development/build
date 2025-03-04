@@ -9,7 +9,7 @@ source /buildkite/hooks/env
 
 telegram() {
 	RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
-		-d "chat_id=@TELEGRAM_GROUP_ID" \
+		-d "chat_id=@$TELEGRAM_GROUP_ID" \
 		-d "parse_mode=Markdown" \
 		-d "message_id=$(cat .msgid 2>/dev/null)" \
 		-d "text=$2")
