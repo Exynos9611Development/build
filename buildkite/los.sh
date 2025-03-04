@@ -81,6 +81,7 @@ repo_init() {
 }
 
 sync_repo() {
+  echo "Syncing"
   telegram editMessageText "$TELEGRAM_MESSAGE Syncing"
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
