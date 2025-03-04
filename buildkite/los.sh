@@ -11,10 +11,10 @@ telegram() {
 	RESULT=$(curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/$1" \
 		-d "chat_id=@$TELEGRAM_GROUP_ID" \
 		-d "parse_mode=Markdown" \
-		-d "message_id=$(cat /root/.msgid 2>/dev/null)" \
+		-d "message_id=$(cat .msgid 2>/dev/null)" \
 		-d "text=$2")
-	MESSAGE_ID=$(jq '/root/.result.message_id' <<<"$RESULT")
-	[[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" > /root/.msgid
+	MESSAGE_ID=$(jq '.result.message_id' <<<"$RESULT")
+	[[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" > .msgid
 }
 
 install_deps() {
@@ -24,13 +24,6 @@ install_deps() {
   # repo
   curl -sLo /usr/local/bin/repo https://commondatastorage.googleapis.com/git-repo-downloads/repo 
   chmod +x /usr/local/bin/repo
-}
-
-notify_telegram() {
-  TELEGRAM_MESSAGE="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
-Build status: "
-  echo "Notifying telegram about start build"
-  telegram sendmessage "$TELEGRAM_MESSAGE Initializing"
 }
 
 setup_git() {
@@ -78,6 +71,13 @@ repo_init() {
   else
     cd /lineage
   fi
+}
+
+notify_telegram() {
+  TELEGRAM_MESSAGE="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
+Build status:"
+  echo "Notifying telegram about start job"
+  telegram sendmessage "$TELEGRAM_MESSAGE Initializing"
 }
 
 sync_repo() {
@@ -140,6 +140,7 @@ upload_rom() {
   DEBIAN_FRONTEND=noninteractive gh release create "$tag_name" --title "$tag_name"
   gh release upload "$tag_name" *.zip *.img
   #git push
+  cd ../
 }
 
 post_telegram() {
@@ -165,10 +166,10 @@ cleanup() {
 
 main() {
   install_deps
-  notify_telegram
   setup_git
   init
   repo_init
+  notify_telegram
   sync_repo
   setup_signing_and_ota
   setup_ccache
