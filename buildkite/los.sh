@@ -15,9 +15,6 @@ telegram() {
 	  -d "text=$2")
   MESSAGE_ID=$(jq '.result.message_id' <<<"$RESULT")
   [[ $MESSAGE_ID =~ ^[0-9]+$ ]] && echo "$MESSAGE_ID" > .msgid
-
-  telegram_message="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
-Build status:"
 }
 
 install_deps() {
@@ -78,6 +75,8 @@ repo_init() {
 
 notify_telegram() {
   echo "Notifying telegram about job"
+  telegram_message="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
+Build status:"
   telegram sendmessage "${telegram_message} Started"
 }
 
@@ -118,10 +117,10 @@ setup_ccache() {
 
 build_device() {
   local device=$1
-  source build/envsetup.sh
+  set +u
   telegram editMessageText "$telegram_message Building $device"
   echo "Building ROM for $device" | tee /tmp/android-build.log
-  set +u
+  source build/envsetup.sh
   brunch "$device" user -j 2>&1 | tee /tmp/android-build.log
   set -u
 }
