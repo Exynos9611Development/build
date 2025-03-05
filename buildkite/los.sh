@@ -2,9 +2,9 @@
 set -eo pipefail
 
 devices=("a51" "f41" "m31s" "m31" "m21")
-lineage_ver=("22.1")
 build_date=$(date -u +%Y%m%d)
-rom_dir=("/lineage")
+rom_dir="/lineage"
+lineage_ver="22.1"
 
 source /buildkite/hooks/env
 
@@ -64,11 +64,11 @@ setup_zram() {
 }
 
 repo_init() {
-  if [ ! -d "$rom_dir" ] && [ ! -d "$rom_dir"/.repo/ ]; then
-    mkdir "$rom_dir"
+  if [ ! -d "$rom_dir"/ ] && [ ! -d "$rom_dir"/.repo/ ]; then
+    mkdir "$rom_dir"/
     cd "$rom_dir"/
-    repo init -u https://github.com/lineageos/android.git -b lineage-"${lineage_ver[0]}" --git-lfs --depth=1  | tee /tmp/android-sync.log
-    git clone https://github.com/Exynos9611Development/local_manifests .repo/local_manifests -b lineage-"${lineage_ver[0]}" --depth=1 | tee /tmp/android-sync.log
+    repo init -u https://github.com/lineageos/android.git -b lineage-"$lineage_ver" --git-lfs --depth=1  | tee /tmp/android-sync.log
+    git clone https://github.com/Exynos9611Development/local_manifests .repo/local_manifests -b lineage-"$lineage_ver" --depth=1 | tee /tmp/android-sync.log
   else
     cd "$rom_dir"/
   fi
@@ -78,12 +78,12 @@ notify_telegram() {
   echo "Notifying telegram about job"
   telegram_message="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
 Build status:"
-  telegram sendmessage "${telegram_message} Started"
+  telegram sendmessage "$telegram_message Started"
 }
 
 sync_repo() {
   echo "Syncing"
-  telegram editMessageText "${telegram_message} Syncing"
+  telegram editMessageText "$telegram_message Syncing"
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 | tee -a /tmp/android-sync.log
@@ -92,12 +92,12 @@ sync_repo() {
 
 setup_signing_and_ota() {
   if [ ! -d "$rom_dir"/vendor/lineage_priv ] && [ ! -d "$rom_dir"/vendor/lineage/OTA ]; then
-    telegram editMessageText "${telegram_message} Setuping signing"
     echo "Setting up signing and OTA"
+    telegram editMessageText "$telegram_message Setuping signing"
     git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log
     sed -i 's/ChangeToYourOwnURL/https:\/\/github.com\/Exynos9611Development\/OTA\/releases\/download\/%s\/%s/g' vendor/lineage/OTA/generate_ota_json.sh
     sed -i '/@echo "Package Complete: $(LINEAGE_TARGET_PACKAGE)"/i \	$(hide) ./vendor/lineage/OTA/generate_ota_json.sh $(LINEAGE_TARGET_PACKAGE)' vendor/lineage/build/tasks/bacon.mk
-    git clone git@github.com:Exynos9611Development/android_vendor_lineage-priv.git vendor/lineage-priv -b lineage-"${lineage_ver[0]}" | tee /tmp/android-sync.log
+    git clone git@github.com:Exynos9611Development/android_vendor_lineage-priv.git vendor/lineage-priv -b lineage-"$lineage_ver" | tee /tmp/android-sync.log
     for device in "${devices[@]}"; do
       echo "lineage.updater.uri=https://raw.githubusercontent.com/Exynos9611Development/OTA/lineage/${device}/ota.json" >> device/samsung/"$device"/vendor.prop
     done
@@ -107,7 +107,6 @@ setup_signing_and_ota() {
 setup_ccache() {
   local ccache_size
   ccache_size=$(echo "$available_storage * 0.5 - 250" | bc -l)
-  ccache_size=$(echo "$ccache_size < 0 ? 0 : $ccache_size" | bc -l)
   if (( $(echo "$ccache_size > 0" | bc -l) )); then
     echo "Setting up ccache" | tee /tmp/android-build.log
     export USE_CCACHE=1
@@ -127,29 +126,32 @@ build_device() {
 }
 
 upload_rom() {
+  local out_dir ota_dir
   tag_name="$build_date"
-  local out_dir="$rom_dir/out" ota_dir="$rom_dir/ota"
+  out_dir="$rom_dir/out"
+  ota_dir="$rom_dir/ota"
   telegram editMessageText "$telegram_message Uploading"
   if [ ! -d "$ota_dir" ]; then
-  git clone https://github.com/Exynos9611Development/OTA ${ota_dir}
+  git clone https://github.com/Exynos9611Development/OTA "$ota_dir"
   fi
-  cd ${ota_dir}
+  cd "$ota_dir"
   git clean -xfd
   for device in "${devices[@]}"; do
-    cp "$out_dir"/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip ${ota_dir}/
-    cp "$out_dir"/target/product/"$device"/recovery.img ${ota_dir}/recovery-"$device".img
-    cp "$out_dir"/target/product/"$device"/ota.json ${ota_dir}/"$device"/ota.json
+    cp "$out_dir"/target/product/"$device"/lineage-"$lineage_ver"-"$build_date"-UNOFFICIAL-"$device".zip "$ota_dir"/
+    cp "$out_dir"/target/product/"$device"/recovery.img "$ota_dir"/recovery-"$device".img
+    cp "$out_dir"/target/product/"$device"/ota.json "$ota_dir"/"$device"/ota.json
   done
   git add ./*/*.json
-  git commit -m "ota: JSON update ${tag_name} LineageOS ${lineage_ver[0]}"
+  git commit -m "ota: JSON update $tag_name LineageOS $lineage_ver"
   gh release create "$tag_name" --title "$tag_name" --generate-notes
   gh release upload "$tag_name" ./*.zip ./*.img
   git push
-  cd ${rom_dir}/
+  cd "$rom_dir"/
 }
 
 post_telegram() {
-  local os_patch_lvl=$(grep -oP '(?<=\.)\d{6}(?=\.)' build/core/build_id.mk)
+  local os_patch_lvl
+  os_patch_lvl=$(grep -oP '(?<=\.)\d{6}(?=\.)' build/core/build_id.mk)
   telegram_message_edit="
 Devices: ${devices[*]}
 
