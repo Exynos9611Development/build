@@ -4,6 +4,7 @@ set -eo pipefail
 devices=("a51" "f41" "m31s" "m31" "m21")
 lineage_ver=("22.1")
 build_date=$(date -u +%Y%m%d)
+rom_dir=("/lineage")
 
 source /buildkite/hooks/env
 
@@ -41,7 +42,7 @@ check_storage() {
   local total_storage available_storage
   total_storage=$(df -h | awk '/\/$/ {print $4}')
   available_storage=${total_storage%G}
-  if [ "$available_storage" -lt 250 ] && [ ! -d /lineage/ ]; then
+  if [ "$available_storage" -lt 250 ] && [ ! -d "$rom_dir"/ ]; then
     echo "You need at least 250 GB of free storage to build ROM!"
     exit 1
   fi
@@ -63,13 +64,13 @@ setup_zram() {
 }
 
 repo_init() {
-  if [ ! -d /lineage/ ] && [ ! -d /lineage/.repo/ ]; then
-    mkdir /lineage
-    cd /lineage/
+  if [ ! -d "$rom_dir" ] && [ ! -d "$rom_dir"/.repo/ ]; then
+    mkdir "$rom_dir"
+    cd "$rom_dir"/
     repo init -u https://github.com/lineageos/android.git -b lineage-"${lineage_ver[0]}" --git-lfs --depth=1  | tee /tmp/android-sync.log
     git clone https://github.com/Exynos9611Development/local_manifests .repo/local_manifests -b lineage-"${lineage_ver[0]}" --depth=1 | tee /tmp/android-sync.log
   else
-    cd /lineage
+    cd "$rom_dir"/
   fi
 }
 
@@ -90,7 +91,7 @@ sync_repo() {
 }
 
 setup_signing_and_ota() {
-  if [ ! -d /lineage/vendor/lineage_priv ] && [ ! -d /lineage/vendor/lineage/OTA ]; then
+  if [ ! -d "$rom_dir"/vendor/lineage_priv ] && [ ! -d "$rom_dir"/vendor/lineage/OTA ]; then
     telegram editMessageText "${telegram_message} Setuping signing"
     echo "Setting up signing and OTA"
     git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log
@@ -128,16 +129,16 @@ build_device() {
 upload_rom() {
   tag_name="$build_date"
   telegram editMessageText "$telegram_message Uploading"
-  if [ ! -d /lineage/OTA ]; then
+  if [ ! -d "$rom_dir"/OTA ]; then
   git clone https://github.com/Exynos9611Development/OTA OTA
   fi
-  for device in "${devices[@]}"; do
-    cp out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
-    cp out/target/product/"$device"/recovery.img OTA/recovery-"$device".img
-    cp out/target/product/"$device"/ota.json OTA/"$device"/ota.json
-  done
   cd OTA
   git clean -xfd
+  for device in "${devices[@]}"; do
+    cp "$rom_dir"/out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
+    cp "$rom_dir"/out/target/product/"$device"/recovery.img OTA/recovery-"$device".img
+    cp "$rom_dir"/out/target/product/"$device"/ota.json OTA/"$device"/ota.json
+  done
   git add ./*/*.json
   git commit -m "ota: JSON update ${tag_name} LineageOS ${lineage_ver[0]}"
   gh release create "$tag_name" --title "$tag_name" --generate-notes
