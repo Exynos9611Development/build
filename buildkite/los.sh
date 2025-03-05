@@ -128,28 +128,28 @@ build_device() {
 
 upload_rom() {
   tag_name="$build_date"
-  local out_dir="$rom_dir/out"
+  local out_dir="$rom_dir/out" ota_dir="$rom_dir/ota"
   telegram editMessageText "$telegram_message Uploading"
-  if [ ! -d "$rom_dir"/OTA ]; then
-  git clone https://github.com/Exynos9611Development/OTA OTA
+  if [ ! -d "$ota_dir" ]; then
+  git clone https://github.com/Exynos9611Development/OTA ${ota_dir}
   fi
-  cd OTA
+  cd ${ota_dir}
   git clean -xfd
   for device in "${devices[@]}"; do
-    cp "$out_dir"/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
-    cp "$out_dir"/target/product/"$device"/recovery.img OTA/recovery-"$device".img
-    cp "$out_dir"/target/product/"$device"/ota.json OTA/"$device"/ota.json
+    cp "$out_dir"/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip ${ota_dir}/
+    cp "$out_dir"/target/product/"$device"/recovery.img ${ota_dir}/recovery-"$device".img
+    cp "$out_dir"/target/product/"$device"/ota.json ${ota_dir}/"$device"/ota.json
   done
   git add ./*/*.json
   git commit -m "ota: JSON update ${tag_name} LineageOS ${lineage_ver[0]}"
   gh release create "$tag_name" --title "$tag_name" --generate-notes
   gh release upload "$tag_name" ./*.zip ./*.img
   git push
-  cd ../
+  cd ${rom_dir}/
 }
 
 post_telegram() {
-  os_patch_lvl=$(grep -oP '(?<=\.)\d{6}(?=\.)' build/core/build_id.mk)
+  local os_patch_lvl=$(grep -oP '(?<=\.)\d{6}(?=\.)' build/core/build_id.mk)
   telegram_message_edit="
 Devices: ${devices[*]}
 
