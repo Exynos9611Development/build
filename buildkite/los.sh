@@ -128,6 +128,7 @@ build_device() {
 
 upload_rom() {
   tag_name="$build_date"
+  local out_dir="$rom_dir/out"
   telegram editMessageText "$telegram_message Uploading"
   if [ ! -d "$rom_dir"/OTA ]; then
   git clone https://github.com/Exynos9611Development/OTA OTA
@@ -135,9 +136,9 @@ upload_rom() {
   cd OTA
   git clean -xfd
   for device in "${devices[@]}"; do
-    cp "$rom_dir"/out/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
-    cp "$rom_dir"/out/target/product/"$device"/recovery.img OTA/recovery-"$device".img
-    cp "$rom_dir"/out/target/product/"$device"/ota.json OTA/"$device"/ota.json
+    cp "$out_dir"/target/product/"$device"/lineage-"${lineage_ver[0]}"-"$build_date"-UNOFFICIAL-"$device".zip OTA/
+    cp "$out_dir"/target/product/"$device"/recovery.img OTA/recovery-"$device".img
+    cp "$out_dir"/target/product/"$device"/ota.json OTA/"$device"/ota.json
   done
   git add ./*/*.json
   git commit -m "ota: JSON update ${tag_name} LineageOS ${lineage_ver[0]}"
