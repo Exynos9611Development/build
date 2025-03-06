@@ -37,15 +37,15 @@ install_deps() {
 }
 
 init() {
-    check_storage
-    setup_zram
+  check_storage
+  setup_zram
 }
 
 check_storage() {
-  local total_storage available_storage
+  local total_storage
   total_storage=$(df -h | awk '/\/$/ {print $4}')
   available_storage=${total_storage%G}
-  if [ "$available_storage" -lt 250 ]; then
+  if [ "$available_storage" -lt 250 ] && [ ! -d "$rom_dir"/ ]; then
     echo "You need at least 250 GB of free storage to build ROM!"
     exit 1
   fi
@@ -57,10 +57,10 @@ setup_zram() {
     total_ram=$(free -m | awk '/^Mem:/{print $2}')
     zram_size=$((total_ram * 2))M
     echo "Setting up ZRAM"
-    sudo modprobe zram num_devices=1
-    sudo zramctl --find --size "$zram_size"
-    sudo mkswap /dev/zram0
-    sudo swapon /dev/zram0
+    modprobe zram num_devices=1
+    zramctl --find --size "$zram_size"
+    mkswap /dev/zram0
+    swapon /dev/zram0
   else
     echo "ZRAM is already enabled."
   fi
@@ -83,25 +83,26 @@ select_rom() {
 repo_init() {
   local dir_name repo_url
   case $ROM_NAME in
-    lineage) dir_name="LOS"; repo_url="https://github.com/LineageOS/android.git" ;;
-    crdroid) dir_name="CRD"; repo_url="https://github.com/crdroidandroid/android.git" ;;
-    pixelos) dir_name="POS"; repo_url="https://github.com/PixelOS/android.git" ;;
+    lineage) rom_dir="lineage"; repo_url="https://github.com/LineageOS/android.git" ;;
+    crdroid) rom_dir="crdroid"; repo_url="https://github.com/crdroidandroid/android.git" ;;
+    pixelos) rom_dir="pixelos"; repo_url="https://github.com/PixelOS/android.git" ;;
   esac
 
-  if [ ! -d "$dir_name" ] && [ ! -d "$dir_name/.repo" ]; then
-    mkdir "$dir_name"
-    cd "$dir_name"
+  if [ ! -d "$rom_dir" ] && [ ! -d "$rom_dir/.repo" ]; then
+    mkdir "$rom_dir"
+    cd "$rom_dir"
     repo init -u "$repo_url" --depth=1 --git-lfs
   else
     cd "$dir_name"
   fi
 
-  if [ ! -d .repo/local_manifests ] && [ ! -d device/samsung ] && [ ! -d hardware/samsung ]; then
+  if [ ! -d .repo/local_manifests ]; then
     git clone https://github.com/Exynos9611Development/local_manifests .repo/local_manifests --depth=1
   fi
 }
 
 sync_repo() {
+  echo "Syncing"
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1 || true
   repo sync --detach --current-branch --no-tags --force-remove-dirty --force-sync -j12 2>&1
@@ -111,29 +112,30 @@ sync_repo() {
 setup_ccache() {
   local ccache_size
   ccache_size=$(echo "$available_storage * 0.5 - 250" | bc -l)
-  ccache_size=$(echo "$ccache_size < 0 ? 0 : $ccache_size" | bc -l)
   if (( $(echo "$ccache_size > 0" | bc -l) )); then
-    echo "Setting up ccache"
+    echo "Setting up ccache" | tee /tmp/android-build.log
     export USE_CCACHE=1
     export CCACHE_EXEC=/usr/bin/ccache
-    ccache -M "${ccache_size}G"
+    ccache -M "${ccache_size}G" | tee /tmp/android-build.log
   fi
 }
 
-convert_lineage_to_aosp() {
-  echo "Adapting common tree for aosp"
-  cd device/samsung/universal9611-common
-  sed -i '/# Touch HAL/,+2d' common.mk
-  sed -i '/# FastCharge/,+2d' common.mk
-  cd ../../../
-  for device in "${devices[@]}"; do
-    echo "Adapting $device for aosp"
-    cd device/samsung/"$device" || { echo "Directory device/samsung/$device not found"; continue; }
-    mv lineage_"$device".mk aosp_"$device".mk
-    sed -i 's/lineage_/aosp_/g' AndroidProducts.mk
-    sed -i 's/lineage/aosp/g' aosp_"$device".mk
-    cd ../../../
-  done
+adapt_for_aosp() {
+  if [ "$ROM_NAME" = "pixelos" ]; then
+    echo "Adapting common tree for aosp"
+    cd device/samsung/universal9611-common
+    sed -i '/# Touch HAL/,+2d' common.mk
+    sed -i '/# FastCharge/,+2d' common.mk
+    cd "$rom_dir"
+    for device in "${devices[@]}"; do
+      echo "Adapting $device for aosp" | tee android-build.log
+      cd device/samsung/"$device"
+      mv lineage_"$device".mk aosp_"$device".mk
+      sed -i 's/lineage_/aosp_/g' AndroidProducts.mk
+      sed -i 's/lineage/aosp/g' aosp_"$device".mk
+      cd "$rom_dir"
+    done
+  fi
 }
 
 device_for_build() {
@@ -161,15 +163,10 @@ device_for_build() {
 
 build_device() {
   local device=$1
+  set +u
   source build/envsetup.sh
-  echo "Building ROM for $device"
-  brunch "$device" user
-  if [ $? -ne 0 ]; then
-    echo "Error: Build $device failed"
-    exit 1
-  else
-    echo "ROM build completed successfully for $device"
-  fi
+  brunch "$device" user -j
+  set -u
 }
 
 main() {
@@ -179,9 +176,8 @@ main() {
   repo_init
   sync_repo
   setup_ccache
-  device_for_build
+  adapt_for_aosp
+  select_device_for_build
 }
 
-# Let's run
 main
-
