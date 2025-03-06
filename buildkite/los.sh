@@ -42,7 +42,7 @@ check_storage() {
   local total_storage
   total_storage=$(df -h | awk '/\/$/ {print $4}')
   available_storage=${total_storage%G}
-  if [ "$available_storage" -lt 250 ] && [ ! -d "$rom_dir"/ ]; then
+  if [ "$available_storage" -lt 250 ] && [ ! -d "$rom_dir"/ ] && [ ! -d /crdroidandroid ] && [ ! -d /pixelos ]; then
     echo "You need at least 250 GB of free storage to build ROM!"
     exit 1
   fi
@@ -65,6 +65,7 @@ setup_zram() {
 
 repo_init() {
   if [ ! -d "$rom_dir"/ ] && [ ! -d "$rom_dir"/.repo/ ]; then
+    rm -rf /crdroidandroid /pixelos
     mkdir "$rom_dir"/
     cd "$rom_dir"/
     repo init -u https://github.com/lineageos/android.git -b lineage-"$lineage_ver" --git-lfs --depth=1  | tee /tmp/android-sync.log
