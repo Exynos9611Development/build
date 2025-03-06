@@ -92,7 +92,7 @@ sync_repo() {
 }
 
 setup_signing_and_ota() {
-  if [ ! -d "$rom_dir"/vendor/lineage_priv ] && [ ! -d "$rom_dir"/vendor/lineage/OTA ]; then
+  if [ ! -d "$rom_dir"/vendor/lineage-priv ] && [ ! -d "$rom_dir"/vendor/lineage/OTA ]; then
     echo "Setting up signing and OTA"
     telegram editMessageText "$telegram_message Setuping signing"
     git clone https://github.com/cat658011/json_ota_generator vendor/lineage/OTA | tee android-sync.log

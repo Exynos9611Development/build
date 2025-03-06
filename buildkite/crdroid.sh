@@ -93,7 +93,7 @@ sync_repo() {
 }
 
 setup_signing_and_ota() {
-  if [ ! -d "$rom_dir"/vendor/lineage_priv ]; then
+  if [ ! -d "$rom_dir"/vendor/lineage-priv ]; then
     echo "Setting up signing and OTA"
     telegram editMessageText "$telegram_message Setuping signing"
     git clone git@github.com:Exynos9611Development/android_vendor_lineage-priv.git vendor/lineage-priv -b lineage-"$lineage_ver" | tee /tmp/android-sync.log
