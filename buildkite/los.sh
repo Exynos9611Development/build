@@ -39,7 +39,7 @@ init() {
 }
 
 check_storage() {
-  local total_storage available_storage
+  local total_storage
   total_storage=$(df -h | awk '/\/$/ {print $4}')
   available_storage=${total_storage%G}
   if [ "$available_storage" -lt 250 ] && [ ! -d "$rom_dir"/ ]; then
@@ -121,7 +121,7 @@ build_device() {
   telegram editMessageText "$telegram_message Building $device"
   echo "Building ROM for $device" | tee /tmp/android-build.log
   source build/envsetup.sh
-  brunch "$device" user -j 2>&1 | tee /tmp/android-build.log
+  brunch "$device" user -j$(nproc) 2>&1 | tee /tmp/android-build.log
   set -u
 }
 
