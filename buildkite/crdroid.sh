@@ -77,7 +77,7 @@ repo_init() {
 
 notify_telegram() {
   echo "Notifying telegram about job"
-  telegram_message="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
+  telegram_message="Building $BUILDKITE_PIPELINE_NAME: [See progress]($BUILDKITE_BUILD_URL)
 Build status:"
   telegram sendmessage "$telegram_message Started"
 }
