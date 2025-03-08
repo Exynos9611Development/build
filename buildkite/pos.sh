@@ -70,7 +70,7 @@ repo_init() {
     rm -rf /crdroidandroid /lineage
     mkdir "$rom_dir"/
     cd "$rom_dir"/
-    repo init -u https://github.com/pixelos/android.git -b "$pos_ver" --git-lfs --depth=1  | tee /tmp/android-sync.log
+    repo init -u https://github.com/pixelos/manifest.git -b "$pos_ver" --git-lfs --depth=1  | tee /tmp/android-sync.log
     git clone https://github.com/Exynos9611Development/local_manifests .repo/local_manifests -b lineage-"$lineage_ver" --depth=1 | tee /tmp/android-sync.log
   else
     cd "$rom_dir"/
