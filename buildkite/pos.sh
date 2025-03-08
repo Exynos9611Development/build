@@ -79,7 +79,7 @@ repo_init() {
 
 notify_telegram() {
   echo "Notifying telegram about job"
-  telegram_message="Building $BUILDKITE_MESSAGE: [See progress]($BUILDKITE_BUILD_URL)
+  telegram_message="Building $BUILDKITE_PIPELINE_NAME: [See progress]($BUILDKITE_BUILD_URL)
 Build status:"
   telegram sendmessage "$telegram_message Started"
 }
@@ -114,16 +114,24 @@ setup_ccache() {
 
 adapt_for_aosp() {
   echo "Adapting common tree for aosp"
+  telegram editMessageText "$telegram_message Adapting trees for aosp"
   cd device/samsung/universal9611-common
   sed -i '/# Touch HAL/,+2d' common.mk
   sed -i '/# FastCharge/,+2d' common.mk
-  cd "$rom_dir"
+  sed -i 's|vendor/lineage/|vendor/aosp/|g' BoardConfigCommon.mk
+  echo "Adapting hardware for aosp"
+  cd "$rom_dir"/hardware/samsung
+  rm -rf AdvancedDisplay doze hidl/touch hidl/powershare hidl/livedisplay hidl/fastcharge
   for device in "${devices[@]}"; do
     echo "Adapting $device for aosp" | tee android-build.log
-    cd device/samsung/"$device"
-    mv lineage_"$device".mk aosp_"$device".mk
-    sed -i 's/lineage_/aosp_/g' AndroidProducts.mk
-    sed -i 's/lineage/aosp/g' aosp_"$device".mk
+    cd "$rom_dir"/device/samsung/"$device"
+    if [ ! -f aosp_"$device".mk ]; then
+       mv lineage_"$device".mk aosp_"$device".mk
+       sed -i 's/lineage_/aosp_/g' AndroidProducts.mk
+       sed -i 's/lineage/aosp/g' aosp_"$device".mk
+    else
+       echo "Skipping adapting $device"
+    fi
     cd "$rom_dir"
   done
 }
