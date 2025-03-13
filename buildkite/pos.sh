@@ -132,8 +132,8 @@ adapt_for_aosp() {
     else
        echo "Skipping adapting $device"
     fi
-    cd "$rom_dir"
   done
+  cd "$rom_dir"
 }
 
 build_device() {
