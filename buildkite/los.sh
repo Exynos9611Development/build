@@ -116,6 +116,19 @@ setup_ccache() {
   fi
 }
 
+repopick() {
+  if [ -n "$repopick_topic" ]; then
+    echo "Applying repopick topic: ${repopick_topic}"
+    telegram editMessageText "$telegram_message Repopicking ${repopick_topic}"
+    repopick -p -Q "${repopick_topic}"
+  fi
+  if [ -n "$repopick_patches" ]; then
+    echo "Applying repopick patches: ${repopick_patches}"
+    telegram editMessageText "$telegram_message Repopicking ${repopick_patches}"
+    repopick -p "${repopick_patches}"
+  fi
+}
+
 build_device() {
   local device=$1
   set +u
@@ -177,6 +190,7 @@ main() {
   sync_repo
   setup_signing_and_ota
   setup_ccache
+  repopick
   for device in "${devices[@]}"; do
     build_device "$device"
   done
@@ -186,4 +200,3 @@ main() {
 }
 
 main
-
