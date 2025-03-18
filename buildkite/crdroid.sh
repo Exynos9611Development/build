@@ -4,7 +4,7 @@ set -eo pipefail
 devices=("a51" "f41" "m31s" "m31" "m21")
 build_date=$(date -u +%Y%m%d)
 rom_dir="/crdroidandroid"
-lineage_ver="22.1"
+lineage_ver="22.2"
 android_ver="15.0"
 
 source /buildkite/hooks/env
