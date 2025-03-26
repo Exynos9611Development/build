@@ -41,7 +41,7 @@ init() {
 }
 
 check_storage() {
-  local total_storage
+  local total_storage available_storage
   total_storage=$(df -h | awk '/\/$/ {print $4}')
   available_storage=${total_storage%G}
   if [ "$available_storage" -lt 250 ] && [ ! -d "$rom_dir"/ ] && [ ! -d /crdroidandroid ] && [ ! -d /lineage ]; then
@@ -102,16 +102,10 @@ setup_signing_and_ota() {
 }
 
 setup_ccache() {
-  local ccache_size
-  ccache_size=$(echo "$available_storage * 0.5 - 250" | bc -l)
-  if (( $(echo "$ccache_size > 0" | bc -l) )); then
-    echo "Setting up ccache" | tee /tmp/android-build.log
-    export USE_CCACHE=1
-    export CCACHE_EXEC=/usr/bin/ccache
-    ccache -M "${ccache_size}G" | tee -a /tmp/android-build.log
-  else
-    echo "Insufficient storage for ccache setup" | tee /tmp/android-build.log
-  fi
+  echo "Setting up ccache"
+  export USE_CCACHE=1
+  export CCACHE_EXEC=/usr/bin/ccache
+  ccache -M 50GB
 }
 
 adapt_for_aosp() {
