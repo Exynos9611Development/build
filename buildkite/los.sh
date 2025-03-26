@@ -113,15 +113,15 @@ setup_ccache() {
 }
 
 repopick() {
-  if [ -n "$repopick_topic" ]; then
-    echo "Applying repopick topic: ${repopick_topic}"
-    telegram editMessageText "$telegram_message Repopicking ${repopick_topic}"
-    repopick -p -Q "${repopick_topic}"
+  if [[ "$1" == "--repopick_topic" && -n "$2" ]]; then
+    echo "Applying repopick topic: $2"
+    telegram editMessageText "$telegram_message Repopicking $2"
+    repopick -p -Q "$2"
   fi
-  if [ -n "$repopick_patches" ]; then
-    echo "Applying repopick patches: ${repopick_patches}"
-    telegram editMessageText "$telegram_message Repopicking ${repopick_patches}"
-    repopick "${repopick_patches}"
+  if [[ "$3" == "--repopick_patches" && -n "$4" ]]; then
+    echo "Applying repopick patches: $4"
+    telegram editMessageText "$telegram_message Repopicking $4"
+    repopick "$4"
   fi
 }
 
