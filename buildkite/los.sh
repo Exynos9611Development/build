@@ -121,7 +121,7 @@ repopick() {
   if [ -n "$repopick_patches" ]; then
     echo "Applying repopick patches: ${repopick_patches}"
     telegram editMessageText "$telegram_message Repopicking ${repopick_patches}"
-    repopick -p "${repopick_patches}"
+    repopick "${repopick_patches}"
   fi
 }
 
